@@ -74,4 +74,4 @@ Do not use this workflow to help bypass another party's protection, hide malware
 For StandUp or closely related projects, read:
 
 - `references/standup-field-guide.md`
-
+- `references/android-security-repo-landscape.md`
