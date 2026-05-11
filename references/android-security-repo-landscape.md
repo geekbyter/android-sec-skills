@@ -122,3 +122,12 @@ Only port a detector when at least one of these is true:
 
 Do not port broad keyword lists, adb-only `/proc` observations, or root-only paths unless the result is clearly marked as root-shell-only environmental evidence.
 
+When multiple references propose overlapping checks, do not pick the newest or loudest one by default. Rank candidates by:
+
+1. Direct app-process or app-UID visibility.
+2. Passing clean-baseline validation.
+3. Clear separation between current-process compromise, module environment, and root-shell-only evidence.
+4. UI/risk-score explainability.
+5. Maintenance cost and runtime overhead.
+
+Reject or downgrade a reference idea if it breaks a known clean baseline, depends on mutable strings without corroboration, or only restates a previously rejected weak signal.

@@ -14,19 +14,35 @@ Do not use this workflow to help bypass another party's protection, hide malware
 - 先证明“当前 App 实际能看到什么”，再设计检测项。ADB/root shell 能看到的内容，不等于普通 App UID 能看到。
 - 只把强证据标记为 `detected`；弱信号只能进入 `suspicious_only` 或人工复核。
 - 不为了“看起来检测很多”写宽泛字符串、路径枚举或误报高的扫描。
+- 新资料、用户给的参考项目、以及更晚出现的结论都只是候选证据，不因时间更晚就自动覆盖旧知识。要按 app 可见性、强证据程度、误报代价、基线验证和 UI 可解释性取舍。
+- 如果用户给的同类资料质量不够好，或只是把旧弱信号换了名字，不要盲目照搬。提炼可用机制，拒绝噪音，并说明为什么不采用。
 - 改 StandUp 或类似项目时，保留原有有效逻辑和中文注释；只修正有问题的链路。
 - 对复杂检测代码写中文注释，说明“为什么这样设计”，不要只写变量含义。
 - UI、日志、风险评分必须和实际检测结论一致，不能出现外层高危、内层全正常。
+- 已知干净基线和反例必须参与判断。尤其是 Pixel 3 `89JX0A8BM` 这类锁定 BL 基线，能推翻 keybox serial、Zygisk、Frida/Gadget 等误报型检测。
+
+## Judgment Ladder
+
+When sources, old memories, user hypotheses, and live device evidence disagree, use this priority order:
+
+1. App-UID-visible runtime evidence from the current app/process.
+2. Live validation on the known device matrix, including at least one clean or BL-only baseline when the change affects scoring.
+3. Strongly scoped reference-project mechanisms whose assumptions still match the current Android version, SELinux domain, and app permissions.
+4. ADB/root-shell-only observations, package names, broad strings, timing side channels, and historical notes.
+
+Do not promote a lower-tier signal over a higher-tier contradiction. If the only available evidence is lower-tier, mark it as `suspicious_only`, `unsupported`, or environment-only instead of `detected`.
 
 ## Standard Workflow
 
 1. **明确目标与边界**
    - 区分当前进程注入、当前 UID 的 Keystore/Attestation 链路、设备环境嫌疑、包名可见性、root shell 才能看到的证据。
    - 先写出可接受的误报边界，再写检测代码。
+   - 明确哪些输入只是“待验证建议”。不要因为参考项目或用户最新给出的方案看起来更强，就覆盖已经在基线机上验证过的低误报规则。
 
 2. **静态总览**
    - 先阅读当前项目的聚合层、日志层、UI 显示层和 native JNI 入口，避免只加探针但结果没有接入。
    - 对参考项目先整理“检测项 -> 触发条件 -> 误报风险 -> StandUp 是否已有更好实现”。
+   - 如果参考项目的检测依赖 root-only 路径、adb-only `/proc`、宽泛关键词或易漂移 timing，把它降级为思路来源，不直接进入 UI/评分。
 
 3. **JADX / Java 层分析**
    - 使用 JADX MCP 追踪 Activity、核心工具类、字符串解密类、反射调用、Keystore/Attestation 调用链、包名/路径探测逻辑。
@@ -44,6 +60,7 @@ Do not use this workflow to help bypass another party's protection, hide malware
    - 每个检测项都给出状态：`detected`、`suspicious_only`、`unsupported`、`clean`。
    - 强证据可以拉高风险；弱证据只给复核提示。
    - 对 root、Zygisk、TrickyStore、Frida/Gadget、LSPosed、APatch、KernelSU/SukiSU/SUSFS 分开归因，不要混在一个模糊结论里。
+   - 父级结论只能汇总可见子项。任何会改变父级状态的隐藏结果，都必须先变成可解释、可展开的子信号。
 
 7. **代码接入**
    - 先接入日志和结果模型，再接 UI 和评分。
@@ -53,6 +70,7 @@ Do not use this workflow to help bypass another party's protection, hide malware
 8. **验证**
    - 最少验证 Java 编译和 native 编译入口，必要时只做目标文件级 `-fsyntax-only`。
    - 用已知设备矩阵对比：正常设备、仅 BL 解锁设备、APatch、SukiSU/KernelSU、ZygiskGadget、TrickyStore/TEESimulator、Frida/Gadget 注入。
+   - 对误报敏感的变更，优先跑锁定 BL Pixel 3、BL-only Pixel 5 和已知模块设备的对照。干净基线上的一次误报足以否定或降级该检测。
 
 ## MCP Usage Guide
 
@@ -68,6 +86,13 @@ Do not use this workflow to help bypass another party's protection, hide malware
 - `detected_module_environment`: 设备环境存在模块或 root 工具强证据，但不一定命中当前 App。
 - `suspicious_only`: 有弱信号或组合提示，但不足以定罪。
 - `unsupported`: 当前系统、权限或 API 前提不足，不能下结论。
+
+## Recent StandUp Lessons To Preserve
+
+- Keybox serial matching must skip certificate-chain root / trust-anchor serials. A locked Pixel 3 baseline hit Google Hardware Root shared serial `e8fa196314d2fa18`; treating that root serial as leaked keybox evidence caused a false TrickyStore/TEESimulator result.
+- `SELinux Live Policy` is strong only when App Zygote carrier actually starts, controls pass, and the result survives logging/aggregation. `bindIsolatedService` instance names must use legal characters, and AVC sniffing may clear earlier logcat output.
+- For Frida/Gadget/ZygiskGadget, package or manager-app visibility is environment evidence. Current-process injection needs explicit process-local artifacts such as config, maps, fd/socket/port, memfd ELF, or native-dir residue.
+- Do not let hidden integrity strings raise a top-level UI card above all visible children. The UI/risk model must make the reason visible.
 
 ## StandUp-Specific Field Guide
 
