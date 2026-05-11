@@ -32,6 +32,24 @@ When sources, old memories, user hypotheses, and live device evidence disagree, 
 
 Do not promote a lower-tier signal over a higher-tier contradiction. If the only available evidence is lower-tier, mark it as `suspicious_only`, `unsupported`, or environment-only instead of `detected`.
 
+## Reference Corpus Triage
+
+When the user provides many Android security repositories at once, do not absorb them by chronology or popularity. Classify each idea before updating code, memory, or this skill:
+
+- **Port to StandUp** only when it adds app-process/app-UID-visible evidence, lowers false positives, improves UI/log attribution, or consolidates an existing expensive probe.
+- **Study as attacker model** when the repository is mainly a hiding, injection, or framework implementation. Extract the remaining observable side effects; do not copy evasion code.
+- **Store as reference knowledge** when it improves future reverse-engineering workflow, trace analysis, Binder/ART/linker understanding, or device-matrix reasoning without being a detector itself.
+- **Reject or downgrade** when the idea is broad keyword matching, package-only, root/adb-only, timing-only, depends on mutable names, or breaks a known clean baseline.
+
+High-value lessons from the current local corpus:
+
+- Modified Frida variants mostly move old indicators: names, threads, memfd/fd labels, D-Bus strings, ports, temp paths, and protocol-facing strings. Prefer maps/fd/memfd/native-dir residue/config/current-process integrity over static names.
+- LSPosed/Xposed checks should move beyond strings toward ART `ClassLoader`, JNI global/weak roots, linker/preload state, heap/runtime bridge artifacts, and current-process maps.
+- Zygisk and custom loaders may use memfd, `/jit-cache` naming, ptrace, fd passing, linker tricks, or daemon/socket helpers. Treat single atexit/private-dirty/JIT anomalies as weak unless corroborated.
+- APatch/KSU/SukiSU/SUSFS evidence must respect app-UID limits. Blocked supercall/seccomp is `unsupported`; app-visible live policy, precise mount/proc evidence, validated root-shell evidence, and device-matrix correlation are stronger.
+- TrickyStore/TEESimulator are primarily Keystore/KeyMint/Binder/attestation problems. Keep environment evidence, active current-UID attestation tamper, and keybox leak/revocation evidence separate.
+- Tools like AlgoKiller, SVCMonitors, tiny-dec, and decx are best treated as research workflow skills: trace-driven algorithm recovery, syscall observation, decompiler understanding, and code-analysis automation.
+
 ## Standard Workflow
 
 1. **明确目标与边界**
@@ -93,6 +111,7 @@ Do not promote a lower-tier signal over a higher-tier contradiction. If the only
 - `SELinux Live Policy` is strong only when App Zygote carrier actually starts, controls pass, and the result survives logging/aggregation. `bindIsolatedService` instance names must use legal characters, and AVC sniffing may clear earlier logcat output.
 - For Frida/Gadget/ZygiskGadget, package or manager-app visibility is environment evidence. Current-process injection needs explicit process-local artifacts such as config, maps, fd/socket/port, memfd ELF, or native-dir residue.
 - Do not let hidden integrity strings raise a top-level UI card above all visible children. The UI/risk model must make the reason visible.
+- Large local reference corpora are training material, not patch instructions. Keep the useful mechanisms and reject stale broad checks even when the repo name sounds relevant.
 
 ## StandUp-Specific Field Guide
 
