@@ -37,6 +37,16 @@
 - 强证据才进入 `detected`；弱信号进入 `suspicious_only`，权限/API 不满足进入 `unsupported`。
 - UI、日志、聚合结果、风险评分必须一致，父级状态不能高于所有可见子项。
 - 保留项目已有有效逻辑和中文注释，只修正有问题的链路。
+- 对同类新资料只吸收能通过 App 可见性和基线验证的机制，不按时间顺序覆盖旧结论。
+
+## StandUp 近期要点
+
+- Frida/Gadget 当前注入优先看当前进程：`/proc/self/maps`、`fd`、`memfd`、`/proc/net/tcp*` 当前 UID 端口、native 目录残留和内存字符串。
+- APatch WebUI 版 zygiskGadget 可能把载荷复制到 App 私有目录后 `dlopen` 并删除文件；强特征是 `/data/data/<pkg>/libhhh.so (deleted)` 或 `/data/user/0/<pkg>/libhhh.so (deleted)`，再叠加 `frida:rpc` / `LIBFRIDA` / `Gum*` 更强。
+- `/data/adb/zygisk_gadget/config.json` 中 `inject=true` 是明确目标配置；`inject=false` 是配置残留或开关关闭，属于异常环境，但不能写成当前进程已注入。
+- APatch/zygiskGadget WebUI 是否打开只做上下文，不做主检测。UI 关闭后注入仍可存在，UI 打开也不等价于目标进程已被注入。
+- `code_cache/startup_agents/...-agent.so` 默认只记录信息；只有路径、内存、fd 或线程里出现明确 Frida/Gadget/Gum/linjector 等标记时才升级。
+- ReZygisk 不应靠宽泛进程名或 `/data/adb` 父路径定罪；优先看 App Zygote live policy 中 `RAW_ZYGISK_FILE_VALID=1` / `FAMILY_REZYGISK_POLICY=1`。命中和未命中都要在 logcat 打 `Zygisk 模块环境[SELinux] status=...`，方便现场判断探针是否真正跑完。
 
 ## 推荐验证
 

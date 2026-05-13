@@ -40,6 +40,7 @@ This note captures durable project-specific lessons from the StandUp security-au
 - `bindIsolatedService` instance names must use legal characters. A name like `sepolicy-<uuid>` can fail with `IllegalArgumentException: Illegal instanceName`; use alphanumeric/underscore-only names.
 - Keep `unsupported_or_inconclusive` distinct from `clean`. If the carrier fails to bind, that is lack of usable evidence, not proof that Magisk/KSU/APatch policy is absent.
 - Known validation: Xiaomi 10 `4b978729` produced strong APatch/Magisk-policy evidence; locked Pixel 3 `89JX0A8BM` produced clean live-policy evidence.
+- Zygisk live-policy logs should print regardless of hit result. For Zygisk/ReZygisk, include `RAW_ZYGISK_FILE_VALID`, `FAMILY_REZYGISK_POLICY`, `FAMILY_ZYGISK_POLICY`, controls, and stability in a fixed `Zygisk 模块环境[SELinux]` log line so "no warning" is not confused with "probe did not run".
 
 ### TrickyStore / TEESimulator
 
@@ -75,6 +76,9 @@ This note captures durable project-specific lessons from the StandUp security-au
 - Do not resurrect old broad Zygisk checks that only produce weak suspicious logs.
 - Current-process detection should require stronger evidence such as zygote-derived artifacts, explicit memfd/fd/maps markers, module-injected native payload, or multiple independent runtime anomalies.
 - Weak items such as one ART Private_Dirty hit, generic JIT cache count, or AtexitArray gap should stay `suspicious_only` unless combined with stronger evidence.
+- ReZygisk-specific strong environment evidence: `u:object_r:zygisk_file:s0` exists in live policy (`RAW_ZYGISK_FILE_VALID=1`) while App Zygote raw controls pass and results are stable. This is stronger than generic KSU/SukiSU context and should be represented as `FAMILY_REZYGISK_POLICY=1` / `FAMILY_ZYGISK_POLICY=1`.
+- ReZygisk supporting facts from source/runtime: `id=rezygisk`, `name=ReZygisk`, `/data/adb/rezygisk`, `cp64.sock` / `cp32.sock`, `zygisk-ptrace64`, `zygiskd64`, `zygiskd32`, and `lib*/libzygisk.so`. These are useful for root-shell or AVC corroboration, but the app-side detector should prefer live-policy `zygisk_file`.
+- ReZygisk clears ptrace event messages and can use custom loading/linker choices. Negative ptrace/linker-name checks are therefore not clean proof; only positive, controlled, app-visible evidence should raise risk.
 
 ### Frida / Gadget / ZygiskGadget
 
@@ -82,6 +86,9 @@ This note captures durable project-specific lessons from the StandUp security-au
   - Module environment: packages such as `com.xiaojia.xgj`, root-visible `module.prop`, config JSON, or gadget module files.
   - Current process injection: explicit maps/fd/socket/memfd/port/native-dir residue in StandUp itself.
 - Strong current-process evidence includes `libgadget`, `libhhh`, suspicious memfd ELF such as a renamed Frida payload, fd/socket to Frida/Gadget, standard ports `27042/27043` or observed module port `14725`, and unexpected `.so` / `.config.so` in StandUp native lib directory.
+- APatch WebUI zygiskGadget v1.0.2-style samples may copy the Gadget payload into StandUp private data, load it, then unlink it. `/data/data/com.geekbyte.standup/libhhh.so (deleted)` or `/data/user/0/com.geekbyte.standup/libhhh.so (deleted)` in current-process maps is a high-value signal; combine it with `frida:rpc`, `LIBFRIDA`, or `Gum*` memory strings when present.
+- If root-visible config keeps `com.geekbyte.standup` with `inject=false`, show it as abnormal configuration residue / environment evidence. A fresh process without private deleted ELF, current-UID Gadget port, fd/memfd, or Frida strings should not be described as currently injected.
+- `14725` is strong for the observed sample only when it is reachable or visible as a current-UID port. Because the port is configurable, absence of `14725` is not proof of safety.
 - Android Studio `code_cache/startup_agents/...-agent.so` is usually a debugging artifact; do not flag it unless explicit Frida/Gadget/Gum/froda/linjector markers exist.
 - Thread names such as `Timer-0` or generic `Binder:*` are weak. They can assist only when stronger evidence exists.
 

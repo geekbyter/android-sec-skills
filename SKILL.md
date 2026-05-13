@@ -109,9 +109,15 @@ High-value lessons from the current local corpus:
 
 - Keybox serial matching must skip certificate-chain root / trust-anchor serials. A locked Pixel 3 baseline hit Google Hardware Root shared serial `e8fa196314d2fa18`; treating that root serial as leaked keybox evidence caused a false TrickyStore/TEESimulator result.
 - `SELinux Live Policy` is strong only when App Zygote carrier actually starts, controls pass, and the result survives logging/aggregation. `bindIsolatedService` instance names must use legal characters, and AVC sniffing may clear earlier logcat output.
+- ReZygisk's best app-side signal is its own live-policy type: `u:object_r:zygisk_file:s0`. Treat `RAW_ZYGISK_FILE_VALID=1` + stable App Zygote raw oracle controls + `FAMILY_REZYGISK_POLICY=1` as strong Zygisk module-environment evidence; do not replace it with generic KSU presence, `/data/adb` parent AVC, or one ART/JIT anomaly.
+- SELinux Zygisk environment probing should log both hit and miss with a fixed line such as `Zygisk 模块环境[SELinux] status=命中/未命中`, including decisive flags. Field debugging fails when only positive cases produce visible logcat output.
 - For Frida/Gadget/ZygiskGadget, package or manager-app visibility is environment evidence. Current-process injection needs explicit process-local artifacts such as config, maps, fd/socket/port, memfd ELF, or native-dir residue.
+- For APatch WebUI zygiskGadget samples, the strongest current-process signal can be an app-private deleted ELF mapping such as `/data/data/<pkg>/libhhh.so (deleted)` or `/data/user/0/<pkg>/libhhh.so (deleted)`, often paired with Frida/Gadget strings such as `frida:rpc` in that mapping. Directory scans may be clean because the file was unlinked after `dlopen`.
+- Treat `inject=false` in `/data/adb/zygisk_gadget/config.json` as abnormal configuration residue / environment evidence, not as proof that the fresh app process is injected. Current injection requires maps/memfd/fd/socket/port/native-dir evidence in the target process, or `inject=true` corroborated by current-process evidence.
+- APatch WebUI presence is transient context only. The UI may be closed while injection persists, and the UI may be open without the target process being injected; never use UI visibility as a primary detector.
 - Do not let hidden integrity strings raise a top-level UI card above all visible children. The UI/risk model must make the reason visible.
 - Large local reference corpora are training material, not patch instructions. Keep the useful mechanisms and reject stale broad checks even when the repo name sounds relevant.
+- ReZygisk root/ADB corroboration may include `id=rezygisk`, `name=ReZygisk`, `/data/adb/rezygisk`, `cp64.sock` / `cp32.sock`, `zygisk-ptrace64`, `zygiskd64`, `zygiskd32`, and `lib*/libzygisk.so`; keep these as supporting/root-shell-only unless reproduced from the app side. ReZygisk clears ptrace event messages, so ptrace-message absence is not a clean result.
 
 ## StandUp-Specific Field Guide
 

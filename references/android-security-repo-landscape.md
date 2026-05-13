@@ -99,6 +99,8 @@ Defensive detector lessons:
 - Weak artifacts such as one ART dirty page, JIT noise, or a generic atexit gap should not drive UI high risk.
 - Stronger evidence should be current-process injection, explicit zygisk module environment, zygote-derived ptrace residue proven app-visible, or current app native/memfd artifacts.
 - `DetectZygisk` ptrace and `ZygiskDetector` libc/AtexitArray style checks are research probes. They need ROM/API validation and should start as `suspicious_only` unless paired with stronger app-visible evidence.
+- ReZygisk is best learned as a concrete example of "hiding changes names, but stable policy side effects remain": it defines `zygisk_file`, labels `/data/adb/rezygisk` socket state, uses `cp64.sock` / `cp32.sock`, `zygisk-ptrace*`, and `zygiskd*`, and clears ptrace event messages. For StandUp, the durable detector lesson is the App Zygote raw-context oracle for `u:object_r:zygisk_file:s0`, not broader process-name scanning.
+- A negative ptrace-message result is especially weak against ReZygisk because clearing that message is part of the design. Treat ptrace, JIT, and atexit probes as research/supporting signals unless live policy or current-process injection artifacts corroborate them.
 
 ## TrickyStore / TEESimulator
 
