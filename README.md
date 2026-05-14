@@ -1,6 +1,8 @@
 # Android Security Researcher
 
-这个 skill 用于第一方、授权范围内的 Android 安全研究和加固工作，尤其适合 `StandUp` 这类需要把 root、Zygisk、Frida/Gadget、TrickyStore、APatch、KernelSU/SukiSU、TEE/Attestation 检测接入到真实 App 的项目。
+这个 skill 用于第一方、授权范围内的 Android 安全研究和加固工作
+
+主要是本地创建一个安卓项目，这里我的项目叫【StandUp】，让gpt以借鉴的名义来逆向分析你指定的app并还原对应的防护代码；你再拿着防护代码对抗分析或者自实现，算是另一种层面的绕过机制
 
 ## 什么时候使用
 
