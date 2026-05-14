@@ -32,12 +32,14 @@
 ## 核心判断原则
 
 - 新资料只是候选证据，不因为出现得更晚就自动覆盖旧知识。
+- 用户的判断、我自己的历史判断、参考项目的结论都可能出错；先把它们当线索验证，必要时要直接纠正，而不是顺着错误前提继续加检测。
 - 优先采信当前 App / 当前 UID 可见的运行态证据。
 - 干净基线设备可以推翻误报型检测，尤其是 Pixel 3 `89JX0A8BM`。
 - 强证据才进入 `detected`；弱信号进入 `suspicious_only`，权限/API 不满足进入 `unsupported`。
 - UI、日志、聚合结果、风险评分必须一致，父级状态不能高于所有可见子项。
 - 保留项目已有有效逻辑和中文注释，只修正有问题的链路。
 - 对同类新资料只吸收能通过 App 可见性和基线验证的机制，不按时间顺序覆盖旧结论。
+- `adb shell`、root shell、App UID 是三种视角。能在 `kp` / root 下看到的东西，可以证明设备环境，但不能自动改写成当前 App UID 强证据。
 
 ## StandUp 近期要点
 
@@ -47,6 +49,9 @@
 - APatch/zygiskGadget WebUI 是否打开只做上下文，不做主检测。UI 关闭后注入仍可存在，UI 打开也不等价于目标进程已被注入。
 - `code_cache/startup_agents/...-agent.so` 默认只记录信息；只有路径、内存、fd 或线程里出现明确 Frida/Gadget/Gum/linjector 等标记时才升级。
 - ReZygisk 不应靠宽泛进程名或 `/data/adb` 父路径定罪；优先看 App Zygote live policy 中 `RAW_ZYGISK_FILE_VALID=1` / `FAMILY_REZYGISK_POLICY=1`。命中和未命中都要在 logcat 打 `Zygisk 模块环境[SELinux] status=...`，方便现场判断探针是否真正跑完。
+- APatch/KP 不能只看管理器包名。卸载 `me.bmax.apatch` 不代表 root 核心消失；`/system/bin/kp`、`kp -c id -> uid=0`、root-visible `/data/adb/ap` 和 `/data/adb/modules` 说明环境仍在。包名、root-shell 证据、App UID 证据要分层展示。
+- Hunter-style VFS timing 只能在验证过的阈值上作为强证据；`1.25x~1.4x` 一类校准弱区间只做 logcat 诊断。`/proc/modules` AVC 是通用拒绝，不能被 timing 单独带成 APatch modules 高危。
+- 工具层面优先用 `rg` 搜索代码；如果当前 Codex 子进程仍命中 WindowsApps 包内 `rg.exe` 并报 `Access is denied`，先用 `Select-String` / `Get-ChildItem` 继续工作，再单独修 PATH，不要让搜索工具问题影响判断。
 
 ## 推荐验证
 

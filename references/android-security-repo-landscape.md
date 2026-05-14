@@ -66,6 +66,9 @@ Defensive detector lessons:
 - Do not rely on old syscall timing side channels as universal evidence.
 - Strong APatch evidence should be explicit package, validated `auth_superkey`, app-visible mount/source mismatch, precise AVC/path correlation, or root-shell read-only module confirmation.
 - Treat inaccessible `/data/adb` parent paths as weak and do not show UI risk from EACCES alone.
+- Do not equate "APatch manager app removed" with "KernelPatch/APatch root removed". Root can remain visible through `/system/bin/kp`, `kp -c id -> uid=0`, `/data/adb/ap`, and root-visible modules even when the manager package is gone.
+- Hunter-style VFS latency can help but should not be broadened by local calibration unless it survives clean/BL-only baselines. In StandUp, lower calibrated ratios are useful field diagnostics, not standalone UI danger.
+- `/proc/modules` AVC is a generic denial surface. It can only corroborate APatch modules when a separate strong APatch runtime context exists; it is not direct proof of `/data/adb/modules`.
 - APatch/KPM sources are useful for understanding `supercall`, `resetprop`, module directories, sepolicy loading, and kernel module capability. A normal app must not assume it can query those directly.
 
 ## KernelSU / SukiSU / SUSFS

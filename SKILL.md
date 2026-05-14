@@ -14,6 +14,7 @@ Do not use this workflow to help bypass another party's protection, hide malware
 - 先证明“当前 App 实际能看到什么”，再设计检测项。ADB/root shell 能看到的内容，不等于普通 App UID 能看到。
 - 只把强证据标记为 `detected`；弱信号只能进入 `suspicious_only` 或人工复核。
 - 不为了“看起来检测很多”写宽泛字符串、路径枚举或误报高的扫描。
+- 用户给出的现象、判断、参考链接，以及我自己的历史结论都可能出错；它们是高价值线索，不是最终答案。遇到矛盾时要主动复核、敢于纠正用户或纠正自己，而不是为了迎合而降低证据标准。
 - 新资料、用户给的参考项目、以及更晚出现的结论都只是候选证据，不因时间更晚就自动覆盖旧知识。要按 app 可见性、强证据程度、误报代价、基线验证和 UI 可解释性取舍。
 - 如果用户给的同类资料质量不够好，或只是把旧弱信号换了名字，不要盲目照搬。提炼可用机制，拒绝噪音，并说明为什么不采用。
 - 改 StandUp 或类似项目时，保留原有有效逻辑和中文注释；只修正有问题的链路。
@@ -31,6 +32,8 @@ When sources, old memories, user hypotheses, and live device evidence disagree, 
 4. ADB/root-shell-only observations, package names, broad strings, timing side channels, and historical notes.
 
 Do not promote a lower-tier signal over a higher-tier contradiction. If the only available evidence is lower-tier, mark it as `suspicious_only`, `unsupported`, or environment-only instead of `detected`.
+
+When the user reports a device state, verify the state if it is cheap and relevant. For example, "APatch app is uninstalled" does not prove KernelPatch/APatch root is gone; `kp -c id`, root-visible `/data/adb/modules`, live policy, mount state, and App UID visibility are separate facts.
 
 ## Reference Corpus Triage
 
@@ -118,6 +121,9 @@ High-value lessons from the current local corpus:
 - Do not let hidden integrity strings raise a top-level UI card above all visible children. The UI/risk model must make the reason visible.
 - Large local reference corpora are training material, not patch instructions. Keep the useful mechanisms and reject stale broad checks even when the repo name sounds relevant.
 - ReZygisk root/ADB corroboration may include `id=rezygisk`, `name=ReZygisk`, `/data/adb/rezygisk`, `cp64.sock` / `cp32.sock`, `zygisk-ptrace64`, `zygiskd64`, `zygiskd32`, and `lib*/libzygisk.so`; keep these as supporting/root-shell-only unless reproduced from the app side. ReZygisk clears ptrace event messages, so ptrace-message absence is not a clean result.
+- For APatch/KernelPatch, package visibility is not root state. Uninstalling `me.bmax.apatch` only removes the manager app; a device can still have `/system/bin/kp`, `kp -c id -> uid=0`, `/data/adb/ap`, and populated `/data/adb/modules`. Treat `kp` root-shell capability and root-visible module directories as environment evidence, but keep them distinct from App UID proof.
+- Hunter-style VFS timing is useful but fragile. In StandUp, only the validated Hunter original mid-latency threshold may produce `score=32`; lower "calibrated" ratios around `1.25x~1.4x` are diagnostic only because BL-only / scheduler noise can reach that range. Do not let timing evidence enable unrelated `/proc/modules` AVC escalation by itself.
+- `/proc/modules` AVC is a normal Android denial on many devices. It should never be promoted as APatch modules evidence unless a separate strong APatch runtime context already exists, and even then it should be explained as corroborating basename evidence rather than direct `/data/adb/modules` visibility.
 
 ## StandUp-Specific Field Guide
 

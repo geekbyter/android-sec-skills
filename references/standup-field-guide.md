@@ -31,6 +31,7 @@ This note captures durable project-specific lessons from the StandUp security-au
 
 - `/data/adb` parent path denial is weak and common; do not show UI risk from it alone.
 - Hunter-style AVC sniffing is only useful when a precise child-path or basename correlation is present, for example `/data/adb/modules` paired with `/proc/modules` in the same sniff window.
+- `/proc/modules` denial is common and should not be upgraded just because it contains the basename `modules`. Only allow it as APatch corroboration when another direct APatch runtime source already exists; timing-only or package-only context is not enough.
 - Deduplicate AVC messages before logging/UI, because repeated `ls` or auditd lines can slow the scan and spam the same finding.
 - Hunter-style AVC sniffing may call `logcat -c`, which can erase earlier detector logs in the same scan. If another detector's result matters operationally, replay or log it after AVC sniffing so absence of logs is not mistaken for absence of detection.
 
@@ -62,8 +63,10 @@ This note captures durable project-specific lessons from the StandUp security-au
 ### APatch
 
 - `auth_superkey` side signal is historically strong when validated, but APatch/KernelPatch fixes can reduce reliability. Keep it as one APatch-specific evidence item, not a universal root detector.
-- Avoid old syscall-45 timing logic if it showed false positives across BL-only and APatch devices.
+- Avoid old syscall-45 timing logic if it showed false positives across BL-only and APatch devices. For Hunter-style VFS timing, only the validated original mid-latency threshold should produce a strong APatch/KP score; lower StandUp-calibrated ratios around `1.25x~1.4x` are diagnostic/log-only because BL-only or scheduler noise can overlap that range.
 - Package evidence and root-shell module evidence are useful, but keep them separate from current UID attestation evidence.
+- APatch manager package state is not the same as root state. A device can uninstall `me.bmax.apatch` while KernelPatch/APatch root remains active through `/system/bin/kp`; `kp -c id -> uid=0`, `/data/adb/ap`, or populated `/data/adb/modules` are root-shell environment facts that should correct a mistaken "no root" assumption.
+- Do not let VFS timing alone enable Hunter `/proc/modules` basename escalation. If `/proc/modules` appears only as an AVC denial, keep it out of UI high-risk unless precise `/data/adb/modules` visibility or another strong APatch runtime fact corroborates it.
 
 ### KernelSU / SukiSU / SUSFS
 
