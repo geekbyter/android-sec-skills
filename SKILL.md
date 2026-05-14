@@ -20,6 +20,7 @@ Do not use this workflow to help bypass another party's protection, hide malware
 - 改 StandUp 或类似项目时，保留原有有效逻辑和中文注释；只修正有问题的链路。
 - 对复杂检测代码写中文注释，说明“为什么这样设计”，不要只写变量含义。
 - UI、日志、风险评分必须和实际检测结论一致，不能出现外层高危、内层全正常。
+- 每次新增检测项或新的检测方向，都必须有固定前缀的 logcat 输出；无论命中、未命中还是不支持，都要打印 `status`、关键判定 flag、证据摘要和不采信原因，避免现场排查时看不出探针是否执行。
 - 已知干净基线和反例必须参与判断。尤其是 Pixel 3 `89JX0A8BM` 这类锁定 BL 基线，能推翻 keybox serial、Zygisk、Frida/Gadget 等误报型检测。
 
 ## Judgment Ladder
@@ -85,6 +86,7 @@ High-value lessons from the current local corpus:
 
 7. **代码接入**
    - 先接入日志和结果模型，再接 UI 和评分。
+   - 新探针必须先有固定 logcat 结论行，例如 `xxx[family] status=命中/未命中/不支持`，并在未命中时说明已检查的关键 flag；不要只在 positive case 打日志。
    - 不要重复调用昂贵探针；把结果缓存到单次扫描上下文中复用。
    - 能 native 做且 App UID 可见的轻量探针可下沉到 C/C++；需要 Android API/Keystore 的逻辑保留在 Java/Kotlin。
 
